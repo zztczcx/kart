@@ -26,12 +26,10 @@ func TestOrderRepo_CreateWithItems(t *testing.T) {
 				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO orders (id, coupon_code) VALUES ($1, $2)`)).
 					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO order_items (id, order_id, product_id, quantity) VALUES ($1, $2, $3, $4)`)).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), "10", int32(1)).
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO order_items (id, order_id, product_id, quantity) VALUES ($1, $2, $3, $4)`)).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), "11", int32(1)).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO order_items (id, order_id, product_id, quantity)
+SELECT UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::int4[])`)).
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WillReturnResult(sqlmock.NewResult(2, 2))
 				mock.ExpectCommit()
 			},
 			order: Order{},
@@ -44,8 +42,9 @@ func TestOrderRepo_CreateWithItems(t *testing.T) {
 				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO orders (id, coupon_code) VALUES ($1, $2)`)).
 					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO order_items (id, order_id, product_id, quantity) VALUES ($1, $2, $3, $4)`)).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), "10", int32(0)).
+				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO order_items (id, order_id, product_id, quantity)
+SELECT UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::int4[])`)).
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(assert.AnError)
 				mock.ExpectRollback()
 			},

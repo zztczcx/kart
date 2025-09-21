@@ -8,6 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
 
 const insertOrder = `-- name: InsertOrder :exec
@@ -43,6 +45,28 @@ func (q *Queries) InsertOrderItem(ctx context.Context, arg InsertOrderItemParams
 		arg.OrderID,
 		arg.ProductID,
 		arg.Quantity,
+	)
+	return err
+}
+
+const insertOrderItems = `-- name: InsertOrderItems :exec
+INSERT INTO order_items (id, order_id, product_id, quantity)
+SELECT UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::int4[])
+`
+
+type InsertOrderItemsParams struct {
+	Column1 []string `json:"column_1"`
+	Column2 []string `json:"column_2"`
+	Column3 []string `json:"column_3"`
+	Column4 []int32  `json:"column_4"`
+}
+
+func (q *Queries) InsertOrderItems(ctx context.Context, arg InsertOrderItemsParams) error {
+	_, err := q.db.ExecContext(ctx, insertOrderItems,
+		pq.Array(arg.Column1),
+		pq.Array(arg.Column2),
+		pq.Array(arg.Column3),
+		pq.Array(arg.Column4),
 	)
 	return err
 }

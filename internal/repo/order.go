@@ -50,18 +50,27 @@ func (r *OrderRepo) CreateWithItems(ctx context.Context, o Order, items []OrderI
 	if err != nil {
 		return "", err
 	}
-	for _, it := range items {
-		if it.ID == "" {
-			it.ID = uuid.NewString()
+	if len(items) > 0 {
+		ids := make([]string, len(items))
+		orderIDs := make([]string, len(items))
+		productIDs := make([]string, len(items))
+		quantities := make([]int32, len(items))
+		for i := range items {
+			if items[i].ID == "" {
+				items[i].ID = uuid.NewString()
+			}
+			items[i].OrderID = o.ID
+			ids[i] = items[i].ID
+			orderIDs[i] = items[i].OrderID
+			productIDs[i] = items[i].ProductID
+			quantities[i] = items[i].Quantity
 		}
-		it.OrderID = o.ID
-		err = q.InsertOrderItem(ctx, sqldb.InsertOrderItemParams{
-			ID:        it.ID,
-			OrderID:   it.OrderID,
-			ProductID: it.ProductID,
-			Quantity:  it.Quantity,
-		})
-		if err != nil {
+		if err = q.InsertOrderItems(ctx, sqldb.InsertOrderItemsParams{
+			Column1: ids,
+			Column2: orderIDs,
+			Column3: productIDs,
+			Column4: quantities,
+		}); err != nil {
 			return "", err
 		}
 	}

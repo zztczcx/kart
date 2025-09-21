@@ -136,6 +136,24 @@ func (_m *Querier) InsertOrderItem(ctx context.Context, arg sqlc.InsertOrderItem
 	return r0
 }
 
+// InsertOrderItems provides a mock function with given fields: ctx, arg
+func (_m *Querier) InsertOrderItems(ctx context.Context, arg sqlc.InsertOrderItemsParams) error {
+	ret := _m.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InsertOrderItems")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, sqlc.InsertOrderItemsParams) error); ok {
+		r0 = rf(ctx, arg)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ListAllProducts provides a mock function with given fields: ctx
 func (_m *Querier) ListAllProducts(ctx context.Context) ([]sqlc.Product, error) {
 	ret := _m.Called(ctx)
