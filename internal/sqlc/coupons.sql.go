@@ -24,3 +24,16 @@ func (q *Queries) GetCoupon(ctx context.Context, code string) (Coupon, error) {
 	)
 	return i, err
 }
+
+const tryRedeemSingleUse = `-- name: TryRedeemSingleUse :one
+INSERT INTO coupon_redemptions (code)
+VALUES ($1)
+ON CONFLICT DO NOTHING
+RETURNING code
+`
+
+func (q *Queries) TryRedeemSingleUse(ctx context.Context, code string) (string, error) {
+	row := q.db.QueryRowContext(ctx, tryRedeemSingleUse, code)
+	err := row.Scan(&code)
+	return code, err
+}

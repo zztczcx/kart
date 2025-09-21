@@ -104,6 +104,10 @@ func (s *OrderService) validateCoupon(ctx context.Context, couponCode string) (b
 	if couponCode == "" {
 		return true, nil
 	}
+	// Must be a string of length between 8 and 10 characters
+	if len(couponCode) < 8 || len(couponCode) > 10 {
+		return false, errors.New("coupon code must be between 8 and 10 characters")
+	}
 
 	c, err := s.Coupons.Get(ctx, couponCode)
 	if err != nil {

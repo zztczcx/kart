@@ -16,6 +16,7 @@ type Querier interface {
 	InsertOrderItem(ctx context.Context, arg InsertOrderItemParams) error
 	ListAllProducts(ctx context.Context) ([]Product, error)
 	ListProducts(ctx context.Context) ([]Product, error)
+	TryRedeemSingleUse(ctx context.Context, code string) (string, error)
 }
 
 var _ Querier = (*Queries)(nil)

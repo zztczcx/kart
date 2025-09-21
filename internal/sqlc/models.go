@@ -16,6 +16,11 @@ type Coupon struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type CouponRedemption struct {
+	Code       string    `json:"code"`
+	RedeemedAt time.Time `json:"redeemed_at"`
+}
+
 type Order struct {
 	ID         string         `json:"id"`
 	CouponCode sql.NullString `json:"coupon_code"`

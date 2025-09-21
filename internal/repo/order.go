@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	sqldb "kart/internal/sqlc"
+	"kart/internal/store"
 )
 
 type OrderRepo struct{ db *sql.DB }
@@ -28,6 +29,17 @@ func (r *OrderRepo) CreateWithItems(ctx context.Context, o Order, items []OrderI
 	}()
 
 	q := sqldb.New(tx)
+
+	// Single-use coupon redemption within the same transaction
+	if o.CouponCode.Valid {
+		if _, err := q.TryRedeemSingleUse(ctx, o.CouponCode.String); err != nil {
+			// sqlc returns sql.ErrNoRows when ON CONFLICT DO NOTHING prevented insert
+			if err == sql.ErrNoRows {
+				return "", store.ErrNotFound
+			}
+			return "", err
+		}
+	}
 	err = q.InsertOrder(ctx, sqldb.InsertOrderParams{
 		ID:         o.ID,
 		CouponCode: o.CouponCode,
