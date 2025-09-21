@@ -3,11 +3,11 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/google/uuid"
 
 	sqldb "kart/internal/sqlc"
-	"kart/internal/store"
 )
 
 type OrderRepo struct{ db *sql.DB }
@@ -35,7 +35,7 @@ func (r *OrderRepo) CreateWithItems(ctx context.Context, o Order, items []OrderI
 		if _, err := q.TryRedeemSingleUse(ctx, o.CouponCode.String); err != nil {
 			// sqlc returns sql.ErrNoRows when ON CONFLICT DO NOTHING prevented insert
 			if err == sql.ErrNoRows {
-				return "", store.ErrNotFound
+				return "", errors.New("Coupon Redemed")
 			}
 			return "", err
 		}

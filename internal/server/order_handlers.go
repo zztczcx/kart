@@ -14,19 +14,19 @@ func (s *Server) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		http.Error(w, "invalid input", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
 	// basic input validation at the edge
 	if len(req.Items) == 0 {
-		http.Error(w, "validation error: no items", http.StatusUnprocessableEntity)
+		writeError(w, http.StatusUnprocessableEntity, "no items")
 		return
 	}
 	in := make([]service.OrderItemInput, 0, len(req.Items))
 	for _, it := range req.Items {
 		if it.ProductId == "" || it.Quantity <= 0 {
-			http.Error(w, "validation error: invalid item", http.StatusUnprocessableEntity)
+			writeError(w, http.StatusUnprocessableEntity, "invalid item: productId and quantity are required")
 			return
 		}
 		in = append(in, service.OrderItemInput{ProductID: it.ProductId, Quantity: int32(it.Quantity)})
@@ -37,7 +37,7 @@ func (s *Server) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		Items:      in,
 	})
 	if err != nil {
-		http.Error(w, "invalid input", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
