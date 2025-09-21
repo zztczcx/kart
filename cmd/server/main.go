@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"kart/internal/config"
 	"kart/internal/repo"
@@ -30,10 +34,36 @@ func main() {
 	osvc := service.NewOrderService(pr, cr, or)
 
 	h := &server.Server{Cfg: cfg, Products: ps, Orders: osvc}
-	r := server.NewRouter(h)
-
-	log.Printf("env=%s listening on %s", cfg.Env, cfg.HTTPAddr)
-	if err := http.ListenAndServe(cfg.HTTPAddr, r); err != nil {
-		log.Fatalf("server error: %v", err)
+	r, err := server.NewRouter(cfg.APIKey, h)
+	if err != nil {
+		log.Fatalf("router init: %v", err)
 	}
+
+	srv := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		log.Printf("env=%s listening on %s", cfg.Env, cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v", err)
+		_ = srv.Close()
+	}
+	_ = db.Close()
 }

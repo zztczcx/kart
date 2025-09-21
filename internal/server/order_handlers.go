@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"kart/internal/openapi"
+	"kart/internal/repo"
 	"kart/internal/service"
 )
 
@@ -37,6 +38,10 @@ func (s *Server) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		Items:      in,
 	})
 	if err != nil {
+		if err == repo.ErrCouponRedeemed {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

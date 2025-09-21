@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -15,7 +15,8 @@ import (
 )
 
 // NewRouter creates and configures a chi Router with OpenAPI request validation.
-func NewRouter(handlers openapi.ServerInterface) http.Handler {
+// It returns an error instead of exiting the process to enable graceful startup handling.
+func NewRouter(apiKey string, handlers openapi.ServerInterface) (http.Handler, error) {
 	loader := &openapi3.Loader{IsExternalRefsAllowed: true}
 	specPath := "api/openapi.yaml"
 	if _, err := os.Stat(specPath); os.IsNotExist(err) {
@@ -23,20 +24,21 @@ func NewRouter(handlers openapi.ServerInterface) http.Handler {
 	}
 	spec, err := loader.LoadFromFile(specPath)
 	if err != nil {
-		log.Fatalf("failed to load OpenAPI spec: %v", err)
+		return nil, fmt.Errorf("load OpenAPI spec: %w", err)
 	}
 	if err := spec.Validate(context.Background()); err != nil {
-		log.Fatalf("invalid OpenAPI spec: %v", err)
+		return nil, fmt.Errorf("validate OpenAPI spec: %w", err)
 	}
 
 	r := chi.NewRouter()
-	auth := NewOpenAPIAuthFunc(handlers.(*Server).Cfg.APIKey)
+	auth := NewOpenAPIAuthFunc(apiKey)
 	r.Use(oapimw.OapiRequestValidatorWithOptions(spec, &oapimw.Options{
 		SilenceServersWarning: true,
 		Options:               openapi3filter.Options{AuthenticationFunc: auth},
 	}))
 
-	return openapi.HandlerWithOptions(handlers, openapi.ChiServerOptions{
+	h := openapi.HandlerWithOptions(handlers, openapi.ChiServerOptions{
 		BaseRouter: r,
 	})
+	return h, nil
 }

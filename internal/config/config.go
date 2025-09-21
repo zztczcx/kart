@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config holds application configuration loaded from environment variables.
 type Config struct {
 	Env         string `env:"APP_ENV" envDefault:"dev"`
 	HTTPAddr    string `env:"HTTP_ADDR" envDefault:":8080"`

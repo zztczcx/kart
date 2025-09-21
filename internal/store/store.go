@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -26,7 +27,13 @@ func Open(databaseURL string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := sdb.Ping(); err != nil {
+	// reasonable pool defaults
+	sdb.SetMaxOpenConns(20)
+	sdb.SetMaxIdleConns(4)
+	sdb.SetConnMaxLifetime(30 * time.Minute)
+	sdb.SetConnMaxIdleTime(10 * time.Minute)
+
+	if err := sdb.Ping(); err != nil { // Ping doesn't take context in database/sql
 		_ = sdb.Close()
 		return nil, err
 	}

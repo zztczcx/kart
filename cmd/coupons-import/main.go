@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"kart/internal/config"
@@ -147,7 +149,6 @@ func run(ctx context.Context, path string, batchSize int) error {
 	return nil
 }
 
-
 func main() {
 	var (
 		filePath  string
@@ -157,7 +158,7 @@ func main() {
 	flag.IntVar(&batchSize, "batch", 2000, "number of rows per transaction")
 	flag.Parse()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	if err := run(ctx, filePath, batchSize); err != nil {

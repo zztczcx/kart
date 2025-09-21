@@ -10,6 +10,9 @@ import (
 	sqldb "kart/internal/sqlc"
 )
 
+// ErrCouponRedeemed indicates a single-use coupon has already been redeemed.
+var ErrCouponRedeemed = errors.New("coupon redeemed")
+
 type OrderRepo struct{ db *sql.DB }
 
 func NewOrderRepo(db *sql.DB) *OrderRepo { return &OrderRepo{db: db} }
@@ -35,7 +38,7 @@ func (r *OrderRepo) CreateWithItems(ctx context.Context, o Order, items []OrderI
 		if _, err := q.TryRedeemSingleUse(ctx, o.CouponCode.String); err != nil {
 			// sqlc returns sql.ErrNoRows when ON CONFLICT DO NOTHING prevented insert
 			if err == sql.ErrNoRows {
-				return "", errors.New("Coupon Redeemed")
+				return "", ErrCouponRedeemed
 			}
 			return "", err
 		}
