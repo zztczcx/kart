@@ -96,3 +96,4 @@ Environment variables (loaded from `.env` if present):
 ### Notes
 - Spec includes `servers: /`; validator is configured with host checks silenced and API key authentication.
 - Coupon validation requires presence mask to have at least two bits set.
+- Assumed that there is no same coupon code in the same file
