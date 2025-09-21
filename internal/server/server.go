@@ -9,7 +9,7 @@ import (
 )
 
 //go:generate mockery --name ProductService --dir . --output ../mocks/server --outpkg servermock --filename product_service_mock.go
-//go:generate mockery --name OrderService --dir . --output ../mocks/server --outpkg servermock --filename service_mocks.go
+//go:generate mockery --name OrderService --dir . --output ../mocks/server --outpkg servermock --filename order_service_mocks.go
 
 // ProductService is the minimal interface the handlers need.
 type ProductService interface {
