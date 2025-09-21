@@ -1,0 +1,22 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema:
+      - "db/migrations"
+    queries:
+      - "db/queries"
+    gen:
+      go:
+        package: sqlc
+        out: internal/sqlc
+        sql_package: database/sql
+        emit_json_tags: true
+        emit_prepared_queries: false
+        emit_interface: true
+        overrides:
+          - db_type: "text"
+            go_type: "string"
+          - column: "coupons.presence_mask"
+            go_type: "uint8"
+
+
