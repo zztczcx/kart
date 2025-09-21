@@ -18,7 +18,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	// Migrations are handled externally (docker-compose migrate service)
 
 	// sqlc querier
 	q := sqlc.New(db.DB)

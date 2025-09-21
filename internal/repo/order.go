@@ -35,7 +35,7 @@ func (r *OrderRepo) CreateWithItems(ctx context.Context, o Order, items []OrderI
 		if _, err := q.TryRedeemSingleUse(ctx, o.CouponCode.String); err != nil {
 			// sqlc returns sql.ErrNoRows when ON CONFLICT DO NOTHING prevented insert
 			if err == sql.ErrNoRows {
-				return "", errors.New("Coupon Redemed")
+				return "", errors.New("Coupon Redeemed")
 			}
 			return "", err
 		}

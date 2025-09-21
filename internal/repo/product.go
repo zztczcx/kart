@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sqldb "kart/internal/sqlc"
-	"kart/internal/store"
 )
 
 type ProductRepo struct{ q sqldb.Querier }
@@ -26,13 +25,9 @@ func (r *ProductRepo) List(ctx context.Context) ([]Product, error) {
 func (r *ProductRepo) Get(ctx context.Context, id string) (Product, error) {
 	pr, err := r.q.GetProduct(ctx, id)
 	if err != nil {
-		// sqlc uses database/sql errors; map no rows at call site if desired
 		return Product{}, err
 	}
-	// Map not found to domain error if needed by checking store.ErrNotFound equivalence higher up
-	if pr.ID == "" {
-		return Product{}, store.ErrNotFound
-	}
+
 	return Product(pr), nil
 }
 

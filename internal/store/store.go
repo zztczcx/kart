@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -40,9 +39,3 @@ func (db *DB) Close() error {
 	}
 	return db.DB.Close()
 }
-
-// Migrations are handled externally (docker-compose migrate service)
-
-// Seed replaced by goose dev migration
-
-var ErrNotFound = errors.New("not found")
