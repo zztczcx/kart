@@ -45,8 +45,8 @@ func (im *Importer) insertBatch(ctx context.Context, codes []string) error {
 		_ = tx.Rollback()
 	}()
 
-	// Insert with zero presence mask; ignore conflicts
-	stmt, err := tx.PrepareContext(ctx, "INSERT INTO coupons (code, presence_mask) VALUES ($1, B'00000000') ON CONFLICT (code) DO NOTHING")
+	// Insert with initial presence bit; on conflict, increment 8-bit counter (wrap at 256)
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO coupons (code, presence_mask) VALUES ($1, B'00000001') ON CONFLICT (code) DO UPDATE SET presence_mask = (((coupons.presence_mask)::int + 1) % 256)::bit(8)")
 	if err != nil {
 		return err
 	}
