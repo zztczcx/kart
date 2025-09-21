@@ -147,9 +147,6 @@ func run(ctx context.Context, path string, batchSize int) error {
 	return nil
 }
 
-// nextPresenceMask allocates the next available presence bit [0..7] for this import run.
-// It uses a small coordination table and an exclusive table lock to avoid races.
-// presence logic removed per request; only importing coupon codes now
 
 func main() {
 	var (
