@@ -45,7 +45,7 @@ func (s *OrderService) PlaceOrder(ctx context.Context, in PlaceOrderInput) (Plac
 		return PlaceOrderResult{}, err
 	}
 
-	items, err := s.buildOrderItems(productsByID, in.Items)
+	items, err := s.buildOrderItems(in.Items)
 	if err != nil {
 		return PlaceOrderResult{}, err
 	}
@@ -85,17 +85,13 @@ func (s *OrderService) fetchProductsMap(ctx context.Context, items []OrderItemIn
 	return s.Products.GetMany(ctx, ids)
 }
 
-func (s *OrderService) buildOrderItems(productsByID map[string]repo.Product, inputs []OrderItemInput) ([]repo.OrderItem, error) {
-	items := make([]repo.OrderItem, 0, len(inputs))
-	for _, in := range inputs {
-		p, ok := productsByID[in.ProductID]
-		if !ok {
-			return nil, errors.New("product not found")
-		}
-		items = append(items, repo.OrderItem{
-			ProductID: p.ID,
+func (s *OrderService) buildOrderItems(inputs []OrderItemInput) ([]repo.OrderItem, error) {
+	items := make([]repo.OrderItem, len(inputs))
+	for i, in := range inputs {
+		items[i] = repo.OrderItem{
+			ProductID: in.ProductID,
 			Quantity:  in.Quantity,
-		})
+		}
 	}
 	return items, nil
 }
