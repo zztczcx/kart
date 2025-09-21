@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install tools (psql, jq)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      # Rely on setup-go built-in cache to avoid tar collisions
+      # https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs
+      - name: Enable setup-go caching
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: '**/go.sum'
+
+      - name: Download deps
+        run: go mod download
+
+      - name: Run unit tests
+        run: go test ./...
+
+  smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kart
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kart" 
+          --health-interval 5s 
+          --health-timeout 3s 
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install tools (psql, jq)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h 127.0.0.1 -U postgres -d kart && exit 0
+            sleep 2
+          done
+          echo "Postgres not ready" >&2; exit 1
+
+      - name: Apply schema migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/kart?sslmode=disable
+        run: |
+          go run github.com/pressly/goose/v3/cmd/goose@latest -dir db/migrations postgres "$DATABASE_URL" up
+
+      - name: Apply dev seeds
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/kart?sslmode=disable
+        run: |
+          # Use a separate goose table for dev seeds so versioning doesn't conflict with schema migrations
+          go run github.com/pressly/goose/v3/cmd/goose@latest -table goose_db_version_dev -dir db/migrations_dev postgres "$DATABASE_URL" up
+          # Sanity check: ensure products were seeded
+          psql "$DATABASE_URL" -c "SELECT count(*) FROM products;" | grep -q '^[ ]*3$'
+
+      - name: Start server
+        env:
+          APP_ENV: dev
+          HTTP_ADDR: :8080
+          API_KEY: apitest
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/kart?sslmode=disable
+        run: |
+          nohup bash -c 'go run ./cmd/server > server.log 2>&1' &
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8080/product >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Server did not become ready" >&2; cat server.log || true; exit 1
+
+      - name: Smoke - list products
+        run: |
+          curl -sSf http://127.0.0.1:8080/product | tee products.json
+          # Expect 3 seeded products with specific IDs and names
+          jq -e 'length==3 and
+                 any(.[]; .id=="10" and .name=="Chicken Waffle") and
+                 any(.[]; .id=="11" and .name=="Berry Waffle") and
+                 any(.[]; .id=="12" and .name=="Latte")' products.json >/dev/null
+
+      - name: Smoke - place order
+        run: |
+          curl -sSf http://127.0.0.1:8080/order \
+            -H 'Content-Type: application/json' \
+            -H 'api_key: apitest' \
+            -d '{"couponCode":"","items":[{"productId":"10","quantity":1}]}' | tee order.json
+          # Validate order response has id and one item
+          jq -e '.id != null and (.items | length)==1' order.json >/dev/null
+
+
